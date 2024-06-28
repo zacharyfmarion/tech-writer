@@ -1,0 +1,50 @@
+name: README Update Automation
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  update-readme:
+    name: Update README after PR merge
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+
+    steps:
+      # Check out the repo to access its content
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node 
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.9.0'
+
+      - name: Install Dependencies
+        run: |
+          yarn install
+
+      # Extract PR Number and Commit SHA from the GitHub event context
+      - name: Get PR Info
+        id: pr_info
+        run: |
+          pr_num=$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")
+          commit_sha=$(jq -r '.pull_request.merge_commit_sha' "$GITHUB_EVENT_PATH")
+          echo "pull_request_number=$pr_num" >> $GITHUB_ENV
+          echo "commit_sha=$commit_sha" >> $GITHUB_ENV
+
+      # Run the Node script
+      - name: Generate Updated Readme
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+          REPO_PATH: ${{ github.repository }}
+          PR_NUMBER: ${{ env.pull_request_number }}
+          COMMIT_SHA: ${{ env.commit_sha }}
+        run: npx ts-node index.ts
+      
+      # Additional step to enable debugging, helps in troubleshooting
+      - name: Enable Debug Logging
+        run: |
+          echo "ACTIONS_STEP_DEBUG=true" >> $GITHUB_ENV
+          
