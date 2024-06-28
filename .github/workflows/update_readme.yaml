@@ -24,6 +24,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          corepack enable
           yarn install
 
       # Extract PR Number and Commit SHA from the GitHub event context
